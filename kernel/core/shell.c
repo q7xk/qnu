@@ -25,7 +25,7 @@ static void run_cmd(const char *cmd) {
     if (streq(cmd, "help")) {
         log_write("Commands: help version mem heap memmap cpu acpi pci ls cat ticks reboot clear\n");
     } else if (streq(cmd, "version")) {
-        log_write("QNU Kernel 0.0.4\n");
+        log_write("QNU Kernel 0.0.4.5\n");
     } else if (streq(cmd, "mem")) {
         const struct qnu_boot_info *bi = boot_info_get();
         log_printf("total=%luMB usable=%luMB free_pages=%lu\n", bi->total_memory/1024/1024, bi->usable_memory/1024/1024, pmm_free_pages());

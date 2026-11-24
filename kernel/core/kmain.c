@@ -42,10 +42,10 @@ void kmain(void) {
     log_init();
     console_init(bi->fb_addr, bi->fb_width, bi->fb_height, bi->fb_pitch, bi->fb_bpp);
 
-    log_write("QNU Kernel 0.0.4\n");
+    log_write("QNU Kernel 0.0.4.5\n");
     log_write("Independent Operating System Kernel\n\n");
     log_write("Architecture: x86_64\n");
-    log_write("Boot: UEFI\n");
+    log_write("Boot: UEFI/BIOS (Limine)\n");
     log_write("Kernel: Modular Monolithic\n\n");
 
     arch_cpu_init();

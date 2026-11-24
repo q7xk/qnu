@@ -55,7 +55,6 @@ $(IMG): $(KERNEL)
 	cp /usr/share/limine/limine-uefi-cd.bin build/iso/boot/limine/ 2>/dev/null || true
 	cp /usr/share/limine/BOOTX64.EFI build/iso/EFI/BOOT/BOOTX64.EFI
 	cp /usr/share/limine/BOOTIA32.EFI build/iso/EFI/BOOT/BOOTIA32.EFI 2>/dev/null || true
-	# Create FAT image for UEFI boot
 	dd if=/dev/zero of=$(IMG) bs=1M count=64 status=none
 	LC_ALL=C mformat -i $(IMG) -F ::
 	LC_ALL=C mmd -i $(IMG) ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine ::/limine
@@ -65,6 +64,26 @@ $(IMG): $(KERNEL)
 	LC_ALL=C mcopy -i $(IMG) boot/config/limine.conf ::/EFI/BOOT/
 	LC_ALL=C mcopy -i $(IMG) /usr/share/limine/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
 	@echo "Built $(IMG)"
+
+XORRISO ?= /tmp/opencode/qnu-tools/extract/libisoburn/usr/bin/xorriso
+LIMINE ?= limine
+
+$(ISO): $(KERNEL)
+	@mkdir -p build/iso/boot/limine build/iso/EFI/BOOT
+	cp $(KERNEL) build/iso/boot/qnu.elf
+	cp boot/config/limine.conf build/iso/boot/limine/limine.conf
+	cp /usr/share/limine/limine-bios.sys build/iso/boot/limine/
+	cp /usr/share/limine/limine-bios-cd.bin build/iso/boot/limine/
+	cp /usr/share/limine/limine-uefi-cd.bin build/iso/boot/limine/
+	cp /usr/share/limine/BOOTX64.EFI build/iso/EFI/BOOT/
+	cp /usr/share/limine/BOOTIA32.EFI build/iso/EFI/BOOT/ 2>/dev/null || true
+	$(XORRISO) -as mkisofs -R -J -b boot/limine/limine-bios-cd.bin \
+		-no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus \
+		-apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		build/iso -o $(ISO)
+	$(LIMINE) bios-install $(ISO)
+	@echo "Built $(ISO)"
 
 run: $(IMG)
 	@QEMU=$${QEMU:-qemu-system-x86_64}; \
