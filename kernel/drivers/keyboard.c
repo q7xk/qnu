@@ -14,7 +14,7 @@ void keyboard_irq(void) {
     if (sc & 0x80) return;
     if (sc < 128) {
         char c = scancode_map[sc];
-        if (c) log_printf("%c", c);
+        if (c) { extern void shell_input_char(char c); shell_input_char(c); }
     }
 }
 

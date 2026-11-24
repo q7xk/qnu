@@ -8,6 +8,10 @@
 #include <qnu/sched.h>
 #include <qnu/hal.h>
 #include <qnu/panic.h>
+#include <qnu/acpi.h>
+#include <qnu/cpu.h>
+#include <qnu/lapic.h>
+#include <qnu/shell.h>
 
 void boot_init(void);
 void pic_eoi(u8 irq);
@@ -34,7 +38,7 @@ void kmain(void) {
     log_init();
     console_init(bi->fb_addr, bi->fb_width, bi->fb_height, bi->fb_pitch, bi->fb_bpp);
 
-    log_write("QNU Kernel 0.0.1\n");
+    log_write("QNU Kernel 0.0.2\n");
     log_write("Independent Operating System Kernel\n\n");
     log_write("Architecture: x86_64\n");
     log_write("Boot: UEFI\n");
@@ -54,6 +58,10 @@ void kmain(void) {
     heap_init();
     log_ok("Memory manager initialized");
 
+    cpu_info_init();
+    acpi_init();
+    lapic_init();
+
     interrupts_init();
     log_ok("Interrupt manager initialized");
 
@@ -68,10 +76,11 @@ void kmain(void) {
 
     log_write("\nQNU: Kernel initialized successfully.\n");
 
+    shell_init();
     hal_irq_enable();
 
-    /* keep kernel alive; scheduler will preempt */
     for (;;) {
+        shell_poll();
         __asm__ volatile ("hlt");
     }
 }

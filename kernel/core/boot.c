@@ -29,6 +29,12 @@ static volatile struct limine_kernel_address_request kernel_addr_request = {
     .revision = 0
 };
 
+__attribute__((used, section(".limine_requests")))
+static volatile struct limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST,
+    .revision = 0
+};
+
 __attribute__((used, section(".limine_requests_start")))
 static volatile LIMINE_REQUESTS_START_MARKER;
 
@@ -68,3 +74,4 @@ void boot_init(void) {
 
 const struct qnu_boot_info *boot_info_get(void) { return &boot_info; }
 struct limine_memmap_response *boot_memmap(void) { return memmap_request.response; }
+void *boot_rsdp(void) { return rsdp_request.response ? rsdp_request.response->address : 0; }
