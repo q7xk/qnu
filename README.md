@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.6
+# QNU Kernel 0.0.7
 
 **An independent kernel, built from the ground up.**
 
@@ -8,20 +8,23 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.6`
+- Version: `0.0.7`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.6 Features
+## 0.0.7 Features
 
-- Everything in 0.0.4.x
-- Btrfs-like RAMFS: subvolumes, CoW file writes, CRC32 checksums, snapshot
-- `/home/kullanici` default layout
-- Shell FS commands: `ls`, `cat`, `mkdir`, `subvol`, `snap`, `info`
-- WiFi/BLE: PCI detection/reporting only (no full stack yet)
+- Ring 3 usermode (`iretq`), TSS.RSP0, per-process kernel syscall stack
+- ELF64 loader (PT_LOAD segments, user mappings)
+- POSIX-like syscall ABI foundation: `read/write/open/close/fstat/brk/getpid/exit/exit_group/uname/getcwd/chdir/arch_prctl`
+- Process basics: process table, pid/ppid, fd table, exec/exit/kill/ps scaffolding
+- Minimal in-tree userland libc/syscall wrappers; static ELF64 binaries in `/bin` (`hello`, `uname`, `echo`, `cat`)
+- Shell `exec` command runs real ELF binaries from VFS
+- GNU/FreeBSD-like shell builtins retained
+- **Limitations**: not full POSIX/Linux/FreeBSD ABI; no glibc/musl/FreeBSD libc; no isolated per-process VM; TTY/signal/process are minimal; real GNU/FreeBSD userland binaries not yet ported
 
 ## Project Structure
 

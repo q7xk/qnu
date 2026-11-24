@@ -21,7 +21,7 @@ static u64 *get_next(u64 *table, u64 idx, bool alloc) {
     if (!alloc) return NULL;
     void *p = pmm_alloc_page();
     if (!p) return NULL;
-    table[idx] = ((u64)p - hhdm) | PTE_PRESENT | PTE_WRITE;
+    table[idx] = ((u64)p - hhdm) | PTE_PRESENT | PTE_WRITE | PTE_USER;
     return (u64 *)p;
 }
 

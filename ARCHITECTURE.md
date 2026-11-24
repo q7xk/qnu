@@ -2,7 +2,7 @@
 
 ## Overview
 
-QNU 0.0.6 is a modular monolithic kernel for x86_64. Core subsystems run in kernel space and communicate through internal C interfaces. Architecture-specific code is isolated under `kernel/arch/x86_64/`.
+QNU 0.0.7 is a modular monolithic kernel for x86_64. Core subsystems run in kernel space and communicate through internal C interfaces. Architecture-specific code is isolated under `kernel/arch/x86_64/`.
 
 ## Language Responsibilities
 
