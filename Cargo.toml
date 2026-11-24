@@ -1,0 +1,16 @@
+[package]
+name = "qnu-rust"
+version = "0.0.1"
+edition = "2021"
+license = "GPL-2.0-only"
+
+[lib]
+name = "qnu_rust"
+path = "kernel/rust/src/lib.rs"
+crate-type = ["staticlib"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
