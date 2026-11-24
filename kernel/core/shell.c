@@ -24,9 +24,9 @@ static void prompt(void) { log_write("qnu> "); }
 
 static void run_cmd(const char *cmd) {
     if (streq(cmd, "help")) {
-        log_write("Commands: help version uptime ps mem heap memmap cpu acpi pci ls cat ticks reboot clear\n");
+        log_write("Commands: help version uptime ps mem heap memmap cpu acpi pci wifi bluetooth ls cat ticks reboot clear\n");
     } else if (streq(cmd, "version")) {
-        log_write("QNU Kernel 0.0.4.6\n");
+        log_write("QNU Kernel 0.0.4.7\n");
     } else if (streq(cmd, "mem")) {
         const struct qnu_boot_info *bi = boot_info_get();
         log_printf("total=%luMB usable=%luMB free_pages=%lu\n", bi->total_memory/1024/1024, bi->usable_memory/1024/1024, pmm_free_pages());
@@ -43,6 +43,12 @@ static void run_cmd(const char *cmd) {
         acpi_dump();
     } else if (streq(cmd, "pci")) {
         pci_dump();
+    } else if (streq(cmd, "wifi")) {
+        pci_wireless_dump();
+        log_write("WiFi stack: not implemented (needs NIC driver + 802.11 + WPA + network stack)\n");
+    } else if (streq(cmd, "bluetooth")) {
+        pci_wireless_dump();
+        log_write("BLE stack: not implemented (needs USB/BT controller driver + HCI + BLE stack)\n");
     } else if (streq(cmd, "ls")) {
         vfs_ls("/");
     } else if (streq(cmd, "cat")) {

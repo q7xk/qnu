@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.4.6
+# QNU Kernel 0.0.4.7
 
 **An independent kernel, built from the ground up.**
 
@@ -8,14 +8,14 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.4.6`
+- Version: `0.0.4.7`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.4.6 Features
+## 0.0.4.7 Features
 
 - Everything in 0.0.3
 - LAPIC timer calibrated and used as scheduler tick source
