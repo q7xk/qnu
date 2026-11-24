@@ -71,7 +71,9 @@ run: $(IMG)
 	OVMF=$${OVMF:-/tmp/opencode/qnu-tools/extract/ovmf/usr/share/edk2/x64/OVMF_CODE.4m.fd}; \
 	OVMF_VARS=$${OVMF_VARS:-/tmp/opencode/qnu-tools/extract/ovmf/usr/share/edk2/x64/OVMF_VARS.4m.fd}; \
 	cp $$OVMF_VARS build/OVMF_VARS.fd; \
-	$$QEMU -machine q35 -m 256M -serial stdio -no-reboot -no-shutdown \
+	ROMS=$${ROMS:-/tmp/opencode/qnu-tools/roms}; \
+	LFLAG=""; [ -d "$$ROMS" ] && LFLAG="-L $$ROMS"; \
+	$$QEMU $$LFLAG -machine q35 -m 256M -nic none -serial stdio -display none -no-reboot -no-shutdown \
 		-drive if=pflash,format=raw,readonly=on,file=$$OVMF \
 		-drive if=pflash,format=raw,file=build/OVMF_VARS.fd \
 		-drive format=raw,file=$(IMG)
