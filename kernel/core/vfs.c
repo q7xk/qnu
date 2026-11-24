@@ -122,3 +122,31 @@ void vfs_info(const char *path){
     vfs_node_t *n=vfs_lookup(path); if(!n){ log_write("not found\n"); return; }
     log_printf("name=%s type=%s flags=%x size=%lu checksum=%x\n", n->name, n->type==VFS_DIR?"dir":"file", n->flags, n->size, n->checksum);
 }
+
+int vfs_remove(const char *path){
+    vfs_node_t *n=vfs_lookup(path); if(!n||n==&root) return -1;
+    vfs_node_t *dir=n->parent; if(!dir) return -1;
+    vfs_node_t *prev=NULL,*c=dir->children;
+    while(c){ if(c==n){ if(prev) prev->next=c->next; else dir->children=c->next; return 0; } prev=c; c=c->next; }
+    return -1;
+}
+
+int vfs_copy(const char *src, const char *dst){
+    vfs_node_t *s=vfs_lookup(src); if(!s||s->type!=VFS_FILE) return -1;
+    vfs_node_t *d=vfs_lookup(dst);
+    if(!d) d=vfs_create(dst,VFS_FILE);
+    if(!d||d->type!=VFS_FILE) return -1;
+    d->size=0; d->checksum=0;
+    return vfs_write(d,0,s->data,s->size)>=0?0:-1;
+}
+
+int vfs_rename(const char *src, const char *dst){
+    vfs_node_t *n=vfs_lookup(src); if(!n||n==&root) return -1;
+    char parent[128], name[64]; if(!split_parent(dst,parent,128,name,64)) return -1;
+    vfs_node_t *ndir=vfs_lookup(parent); if(!ndir||ndir->type!=VFS_DIR) return -1;
+    /* unlink */
+    vfs_node_t *prev=NULL,*c=n->parent->children;
+    while(c){ if(c==n){ if(prev) prev->next=c->next; else n->parent->children=c->next; break; } prev=c; c=c->next; }
+    str_cp(n->name,name,64); n->parent=ndir; n->next=ndir->children; ndir->children=n; return 0;
+}
+

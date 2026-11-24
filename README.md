@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.5
+# QNU Kernel 0.0.6
 
 **An independent kernel, built from the ground up.**
 
@@ -8,14 +8,14 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.5`
+- Version: `0.0.6`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.5 Features
+## 0.0.6 Features
 
 - Everything in 0.0.4.x
 - Btrfs-like RAMFS: subvolumes, CoW file writes, CRC32 checksums, snapshot

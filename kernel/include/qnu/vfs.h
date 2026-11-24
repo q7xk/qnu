@@ -21,4 +21,7 @@ int vfs_write(vfs_node_t *n, u64 off, const void *buf, u64 len);
 u32 vfs_checksum(vfs_node_t *n);
 void vfs_ls(const char *path);
 void vfs_info(const char *path);
+int vfs_remove(const char *path);
+int vfs_copy(const char *src, const char *dst);
+int vfs_rename(const char *src, const char *dst);
 #endif
