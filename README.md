@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.2
+# QNU Kernel 0.0.3
 
 **An independent kernel, built from the ground up.**
 
@@ -8,22 +8,21 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.2`
+- Version: `0.0.3`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.2 Features
+## 0.0.3 Features
 
-- Everything in 0.0.1
-- ACPI RSDP/XSDT parsing and SDT table enumeration
-- CPUID CPU vendor detection and APIC capability check
-- Local APIC initialization (MMIO mapping, SVR/EOI)
-- Serial debug shell over COM1 (`help`, `version`, `mem`, `cpu`, `acpi`, `ticks`, `reboot`, `clear`)
-- PS/2 keyboard input routed to shell
-- Memory/runtime info commands
+- Everything in 0.0.2
+- MADT parsing: LAPIC/IOAPIC addresses and CPU count
+- PCI config-space enumeration (`pci`)
+- Shell additions: `heap`, `memmap`, `pci`
+- Keyboard: shift and capslock handling
+- Boot smoke test passes in QEMU/OVMF
 
 ## Project Structure
 

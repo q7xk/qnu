@@ -13,4 +13,5 @@ u64 vmm_get_pml4(void);
 void heap_init(void);
 void *kmalloc(size_t size);
 void kfree(void *ptr);
+void heap_stats(u64 *total, u64 *used);
 #endif

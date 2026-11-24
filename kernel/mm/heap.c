@@ -88,3 +88,14 @@ void kfree(void *ptr) {
         } else cur = cur->next;
     }
 }
+
+
+void heap_stats(u64 *total, u64 *used) {
+    u64 t = 0, u = 0;
+    for (block_t *cur = head; cur; cur = cur->next) {
+        t += cur->size;
+        if (!cur->free) u += cur->size;
+    }
+    if (total) *total = t;
+    if (used) *used = u;
+}
