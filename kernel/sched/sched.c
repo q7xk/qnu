@@ -10,6 +10,7 @@ typedef struct task {
     u64 rsp;
     u64 stack_base;
     task_state_t state;
+    u64 wake_tick;
     char name[32];
     struct task *next;
 } task_t;
@@ -19,8 +20,10 @@ static task_t *ready_queue;
 static task_t tasks[MAX_TASKS];
 static int task_count;
 static bool sched_enabled = false;
+static volatile u64 sched_ticks = 0;
 
 extern void context_switch(u64 *old_rsp, u64 new_rsp);
+extern u64 pit_get_ticks(void);
 void sched_yield(void);
 
 static void task_trampoline(void) {
@@ -36,12 +39,13 @@ static void task_trampoline(void) {
 }
 
 void sched_init(void) {
-    for (int i = 0; i < MAX_TASKS; i++) { tasks[i].state = TASK_DEAD; tasks[i].next = NULL; }
+    for (int i = 0; i < MAX_TASKS; i++) { tasks[i].state = TASK_DEAD; tasks[i].next = NULL; tasks[i].wake_tick=0; }
     task_count = 0;
     current = &tasks[0];
     current->state = TASK_RUNNING;
     current->stack_base = 0;
     current->rsp = 0;
+    current->wake_tick = 0;
     const char *n = "kmain";
     for (int i = 0; i < 31 && n[i]; i++) current->name[i] = n[i];
     current->name[31] = 0;
@@ -61,28 +65,43 @@ int sched_create_kernel_thread(const char *name, void (*entry)(void*), void *arg
     if (!stack) return -1;
     t->stack_base = (u64)stack;
     u64 sp = ((u64)stack + STACK_SIZE) & ~0xFULL;
-    /* build initial stack for context_switch: r15,r14,r13,r12,rbx,rbp,ret */
-    sp -= 8; *(u64*)sp = (u64)task_trampoline; /* ret */
-    sp -= 8; *(u64*)sp = 0; /* rbp */
-    sp -= 8; *(u64*)sp = 0; /* rbx */
-    sp -= 8; *(u64*)sp = (u64)entry; /* r12 - we'll use registers? easier: set up via trampoline args */
-    sp -= 8; *(u64*)sp = (u64)arg;   /* r13 */
-    sp -= 8; *(u64*)sp = 0; /* r14 */
-    sp -= 8; *(u64*)sp = 0; /* r15 */
-    /* We need trampoline to get entry/arg. Simpler: put entry in r12, arg in r13 and use a wrapper */
+    sp -= 8; *(u64*)sp = (u64)task_trampoline;
+    sp -= 8; *(u64*)sp = 0;
+    sp -= 8; *(u64*)sp = 0;
+    sp -= 8; *(u64*)sp = (u64)entry;
+    sp -= 8; *(u64*)sp = (u64)arg;
+    sp -= 8; *(u64*)sp = 0;
+    sp -= 8; *(u64*)sp = 0;
     t->rsp = sp;
     t->state = TASK_READY;
+    t->wake_tick = 0;
     for (int i = 0; i < 31 && name[i]; i++) t->name[i] = name[i];
     t->name[31] = 0;
-    /* insert into round-robin */
     t->next = current->next;
     current->next = t;
     task_count++;
     return idx;
 }
 
+static void wake_sleepers(void) {
+    u64 now = pit_get_ticks();
+    for (int i = 0; i < MAX_TASKS; i++) {
+        if (tasks[i].state == TASK_SLEEPING && now >= tasks[i].wake_tick) tasks[i].state = TASK_READY;
+    }
+}
+
+void sched_sleep(u64 ms) {
+    if (!sched_enabled || !current) return;
+    u64 ticks = ms / 10;
+    if (ticks == 0) ticks = 1;
+    current->wake_tick = pit_get_ticks() + ticks;
+    current->state = TASK_SLEEPING;
+    sched_yield();
+}
+
 void sched_yield(void) {
     if (!sched_enabled || !current) return;
+    wake_sleepers();
     task_t *next = current->next;
     for (int i = 0; i < MAX_TASKS + 1 && next; i++) {
         if (next->state == TASK_READY || next->state == TASK_RUNNING) break;
@@ -98,9 +117,20 @@ void sched_yield(void) {
 
 void sched_tick(void) {
     if (!sched_enabled) return;
+    sched_ticks++;
+    wake_sleepers();
     sched_yield();
 }
 
-void sched_start(void) {
-    /* scheduler is already active; nothing extra needed for 0.0.1 */
+u64 sched_get_ticks(void) { return sched_ticks; }
+
+void sched_ps(void) {
+    log_write("PID STATE   WAKE      NAME\n");
+    for (int i=0;i<MAX_TASKS;i++) {
+        if (tasks[i].state == TASK_DEAD && i!=0) continue;
+        const char *st = tasks[i].state==TASK_RUNNING?"RUN":tasks[i].state==TASK_READY?"READY":tasks[i].state==TASK_SLEEPING?"SLEEP":"DEAD";
+        log_printf("%d   %s  %lu  %s%s\n", i, st, tasks[i].wake_tick, tasks[i].name, (&tasks[i]==current)?" *":"");
+    }
 }
+
+void sched_start(void) { }

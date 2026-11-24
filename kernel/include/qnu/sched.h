@@ -6,5 +6,8 @@ void sched_init(void);
 void sched_start(void);
 void sched_tick(void);
 void sched_yield(void);
+void sched_sleep(u64 ms);
+u64 sched_get_ticks(void);
+void sched_ps(void);
 int sched_create_kernel_thread(const char *name, void (*entry)(void*), void *arg);
 #endif

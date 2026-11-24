@@ -1,6 +1,6 @@
 # QNU Roadmap
 
-## 0.0.4.5 (current)
+## 0.0.4.6 (current)
 
 - [x] UEFI boot via Limine
 - [x] Core C kernel initialization
@@ -12,7 +12,7 @@
 - [x] PIC + PIT + keyboard IRQ
 - [x] Basic kernel scheduler foundation
 
-## 0.0.4.5 (current)
+## 0.0.4.6 (current)
 
 - [x] ACPI RSDP/XSDT parsing and table enumeration
 - [x] CPUID CPU vendor/feature detection
@@ -24,7 +24,7 @@
 - [ ] Robust kernel heap (slab/buddy/hybrid)
 - [ ] Full SMP bring-up
 
-## 0.0.4.5 (current)
+## 0.0.4.6 (current)
 
 - [x] MADT parsing (LAPIC/IOAPIC/CPU count)
 - [x] PCI bus enumeration (config space scan, shell `pci`)
@@ -35,7 +35,7 @@
 - [ ] IOAPIC IRQ routing
 - [ ] HPET/APIC timer as scheduler source
 
-## 0.0.4.5 (current)
+## 0.0.4.6 (current)
 
 - [x] LAPIC timer calibrated and used as scheduler tick source (PIT masked after handoff)
 - [x] IOAPIC initialized and keyboard IRQ routed via IOAPIC
@@ -43,6 +43,7 @@
 - [x] VFS foundation with ramfs (/, /hello.txt, ls/cat)
 - [x] Syscall interface initialized (MSR LSTAR/STAR/SFMASK, dispatch table)
 - [x] Basic fd table and syscall handlers (read/write/open/close/getpid/exit)
+- [x] Timer/scheduler improved (0.0.4.6): sleep/wakeup, uptime/ps, sched tick tracking
 - [~] Unix-like structure: foundations laid, not full POSIX/userland
 - [ ] Ring 3 usermode, ELF loader, fork/exec/wait
 - [ ] Disk drivers (AHCI/NVMe), persistent FS

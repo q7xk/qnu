@@ -9,6 +9,7 @@
 #include <qnu/boot_internal.h>
 #include <limine.h>
 #include <qnu/vfs.h>
+#include <qnu/sched.h>
 
 static char buf[128];
 static int len = 0;
@@ -23,9 +24,9 @@ static void prompt(void) { log_write("qnu> "); }
 
 static void run_cmd(const char *cmd) {
     if (streq(cmd, "help")) {
-        log_write("Commands: help version mem heap memmap cpu acpi pci ls cat ticks reboot clear\n");
+        log_write("Commands: help version uptime ps mem heap memmap cpu acpi pci ls cat ticks reboot clear\n");
     } else if (streq(cmd, "version")) {
-        log_write("QNU Kernel 0.0.4.5\n");
+        log_write("QNU Kernel 0.0.4.6\n");
     } else if (streq(cmd, "mem")) {
         const struct qnu_boot_info *bi = boot_info_get();
         log_printf("total=%luMB usable=%luMB free_pages=%lu\n", bi->total_memory/1024/1024, bi->usable_memory/1024/1024, pmm_free_pages());
@@ -48,9 +49,14 @@ static void run_cmd(const char *cmd) {
         vfs_node_t *n=vfs_lookup("/hello.txt");
         if(n){ char buf[128]; int r=vfs_read(n,0,buf,127); if(r>0){buf[r]=0; log_write(buf);} }
         else log_write("not found\n");
+    } else if (streq(cmd, "uptime")) {
+        extern u64 pit_get_ticks(void);
+        u64 t=pit_get_ticks(); log_printf("uptime: %lu ticks (~%lu s)\n", t, t/100);
+    } else if (streq(cmd, "ps")) {
+        sched_ps();
     } else if (streq(cmd, "ticks")) {
         extern u64 pit_get_ticks(void);
-        log_printf("ticks=%lu\n", pit_get_ticks());
+        log_printf("ticks=%lu sched=%lu\n", pit_get_ticks(), sched_get_ticks());
     } else if (streq(cmd, "clear")) {
         log_write("\n");
     } else if (streq(cmd, "reboot")) {
