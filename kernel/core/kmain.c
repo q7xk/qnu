@@ -42,7 +42,7 @@ void kmain(void) {
     log_init();
     console_init(bi->fb_addr, bi->fb_width, bi->fb_height, bi->fb_pitch, bi->fb_bpp);
 
-    log_write("QNU Kernel 0.0.4.7\n");
+    log_write("QNU Kernel 0.0.5\n");
     log_write("Independent Operating System Kernel\n\n");
     log_write("Architecture: x86_64\n");
     log_write("Boot: UEFI/BIOS (Limine)\n");
@@ -68,6 +68,10 @@ void kmain(void) {
     ioapic_init();
     pci_init();
     vfs_init();
+    vfs_mkdir("/home");
+    vfs_subvol_create("/home/kullanici");
+    vfs_create("/home/kullanici/readme.txt", VFS_FILE);
+    vfs_write(vfs_lookup("/home/kullanici/readme.txt"), 0, "QNU btrfs-like ramfs\n", 22);
     vfs_create("/hello.txt", VFS_FILE);
     vfs_write(vfs_lookup("/hello.txt"), 0, "Hello from QNU ramfs\n", 21);
     syscall_init();

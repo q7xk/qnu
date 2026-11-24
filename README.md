@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.4.7
+# QNU Kernel 0.0.5
 
 **An independent kernel, built from the ground up.**
 
@@ -8,22 +8,20 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.4.7`
+- Version: `0.0.5`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.4.7 Features
+## 0.0.5 Features
 
-- Everything in 0.0.3
-- LAPIC timer calibrated and used as scheduler tick source
-- IOAPIC initialized; keyboard IRQ routed through IOAPIC
-- Heap: slab+free-list allocator
-- VFS foundation: ramfs, `ls`, `cat`
-- Syscall interface: MSRs configured, dispatch table, basic fd/syscall handlers
-- Unix-like foundation started (not full userland/process isolation yet)
+- Everything in 0.0.4.x
+- Btrfs-like RAMFS: subvolumes, CoW file writes, CRC32 checksums, snapshot
+- `/home/kullanici` default layout
+- Shell FS commands: `ls`, `cat`, `mkdir`, `subvol`, `snap`, `info`
+- WiFi/BLE: PCI detection/reporting only (no full stack yet)
 
 ## Project Structure
 
