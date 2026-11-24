@@ -5,4 +5,5 @@ void lapic_init(void);
 void lapic_eoi(void);
 void lapic_timer_init(u32 hz);
 u32 lapic_id(void);
+bool lapic_timer_active(void);
 #endif

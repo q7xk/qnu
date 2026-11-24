@@ -1,6 +1,8 @@
 #include <qnu/types.h>
 #include <qnu/log.h>
 #include <qnu/io.h>
+#include <qnu/lapic.h>
+#include <qnu/ioapic.h>
 
 struct interrupt_frame {
     u64 rax, rbx, rcx, rdx, rsi, rdi, rbp;
@@ -14,6 +16,7 @@ void pic_eoi(u8 irq);
 void pit_tick(void);
 void keyboard_irq(void);
 void sched_tick(void);
+bool lapic_timer_active(void);
 
 #define MAX_IRQ 16
 static void (*irq_handlers[MAX_IRQ])(void);
@@ -27,5 +30,5 @@ void irq_handler(struct interrupt_frame *f) {
     if (irq < MAX_IRQ && irq_handlers[irq]) irq_handlers[irq]();
     if (irq == 0) { pit_tick(); sched_tick(); }
     if (irq == 1) { keyboard_irq(); }
-    pic_eoi(irq);
+    if (ioapic_active()) lapic_eoi(); else pic_eoi(irq);
 }

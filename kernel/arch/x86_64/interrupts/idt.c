@@ -21,6 +21,7 @@ static struct idt_ptr idt_ptr;
 
 extern void *isr_stub_table[];
 extern void *irq_stub_table[];
+extern void isr48(void);
 
 static void idt_set(u8 vec, void *handler, u8 flags) {
     u64 addr = (u64)handler;
@@ -37,6 +38,7 @@ void idt_init(void) {
     for (int i = 0; i < 256; i++) idt_set(i, 0, 0);
     for (int i = 0; i < 32; i++) idt_set(i, isr_stub_table[i], 0x8E);
     for (int i = 0; i < 16; i++) idt_set(32 + i, irq_stub_table[i], 0x8E);
+    idt_set(48, (void*)isr48, 0x8E);
     idt_ptr.limit = sizeof(idt) - 1;
     idt_ptr.base = (u64)&idt;
     __asm__ volatile ("lidt %0" : : "m"(idt_ptr));

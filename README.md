@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.3
+# QNU Kernel 0.0.4
 
 **An independent kernel, built from the ground up.**
 
@@ -8,21 +8,22 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.3`
+- Version: `0.0.4`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.3 Features
+## 0.0.4 Features
 
-- Everything in 0.0.2
-- MADT parsing: LAPIC/IOAPIC addresses and CPU count
-- PCI config-space enumeration (`pci`)
-- Shell additions: `heap`, `memmap`, `pci`
-- Keyboard: shift and capslock handling
-- Boot smoke test passes in QEMU/OVMF
+- Everything in 0.0.3
+- LAPIC timer calibrated and used as scheduler tick source
+- IOAPIC initialized; keyboard IRQ routed through IOAPIC
+- Heap: slab+free-list allocator
+- VFS foundation: ramfs, `ls`, `cat`
+- Syscall interface: MSRs configured, dispatch table, basic fd/syscall handlers
+- Unix-like foundation started (not full userland/process isolation yet)
 
 ## Project Structure
 

@@ -13,6 +13,9 @@
 #include <qnu/lapic.h>
 #include <qnu/shell.h>
 #include <qnu/pci.h>
+#include <qnu/ioapic.h>
+#include <qnu/vfs.h>
+#include <qnu/syscall.h>
 
 void boot_init(void);
 void pic_eoi(u8 irq);
@@ -39,7 +42,7 @@ void kmain(void) {
     log_init();
     console_init(bi->fb_addr, bi->fb_width, bi->fb_height, bi->fb_pitch, bi->fb_bpp);
 
-    log_write("QNU Kernel 0.0.3\n");
+    log_write("QNU Kernel 0.0.4\n");
     log_write("Independent Operating System Kernel\n\n");
     log_write("Architecture: x86_64\n");
     log_write("Boot: UEFI\n");
@@ -62,7 +65,12 @@ void kmain(void) {
     cpu_info_init();
     acpi_init();
     lapic_init();
+    ioapic_init();
     pci_init();
+    vfs_init();
+    vfs_create("/hello.txt", VFS_FILE);
+    vfs_write(vfs_lookup("/hello.txt"), 0, "Hello from QNU ramfs\n", 21);
+    syscall_init();
 
     interrupts_init();
     log_ok("Interrupt manager initialized");
@@ -80,6 +88,9 @@ void kmain(void) {
 
     shell_init();
     hal_irq_enable();
+    lapic_timer_init(100);
+    if (lapic_timer_active()) { extern void pic_set_mask(u8 irq); pic_set_mask(0); }
+    if (ioapic_active()) { for (u8 i=0;i<16;i++) { extern void pic_set_mask(u8 irq); pic_set_mask(i); } }
 
     for (;;) {
         shell_poll();

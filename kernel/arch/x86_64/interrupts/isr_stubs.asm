@@ -323,6 +323,18 @@ isr_stub_table:
     dq isr29
     dq isr30
     dq isr31
+
+global isr48
+extern lapic_timer_handler
+isr48:
+    push qword 0
+    push qword 48
+    PUSH_REGS
+    mov rdi, rsp
+    call lapic_timer_handler
+    POP_REGS
+    add rsp, 16
+    iretq
 global irq_stub_table
 irq_stub_table:
     dq irq0
