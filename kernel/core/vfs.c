@@ -7,11 +7,8 @@ static int str_eq(const char *a,const char*b){while(*a&&*b){if(*a!=*b)return 0;a
 static int str_len(const char*s){int n=0;while(s[n])n++;return n;}
 static void str_cp(char*d,const char*s,int m){int i=0;for(;s[i]&&i<m-1;i++)d[i]=s[i];d[i]=0;}
 
-static u32 crc32(const u8 *data, u64 len){
-    u32 crc=0xFFFFFFFFu;
-    for(u64 i=0;i<len;i++){ crc ^= data[i]; for(int j=0;j<8;j++) crc = (crc>>1) ^ (0xEDB88320u & (0u-(crc&1u))); }
-    return ~crc;
-}
+extern u32 rust_crc32(const u8 *data, u64 len);
+static u32 crc32(const u8 *data, u64 len){ return rust_crc32(data,len); }
 
 static vfs_node_t *new_node(const char *name,u32 type,u32 flags){
     vfs_node_t *n=(vfs_node_t*)kmalloc(sizeof(vfs_node_t)); if(!n) return NULL;

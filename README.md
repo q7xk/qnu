@@ -26,6 +26,8 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 - Minimal in-tree userland libc/syscall wrappers; static ELF64 binaries in `/bin` (`hello`, `uname`, `echo`, `cat`)
 - Shell `exec` command runs real ELF binaries from VFS
 - GNU/FreeBSD-like shell builtins retained
+- **Rust conversions**: `string/mem`, `HAL`, `PIT`, `panic/assert`, `CRC32` services implemented in Rust (`kernel/rust/src/lib.rs`)
+- **Zig**: init component in Zig source; Makefile has zig fallback stub when zig toolchain is unavailable
 - **Limitations**: no preemptive user multitasking/fork/wait yet; no full POSIX signals/tty/job control; no real ext/minix disk FS; no real GNU/FreeBSD ports
 
 ## Project Structure
