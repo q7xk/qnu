@@ -22,7 +22,7 @@ typedef struct {
     volatile u32 *mmio;
     nvme_sqe_t *asq, *iosq; nvme_cqe_t *acq, *iocq; u8 *dma;
     u16 asq_tail, acq_head, iosq_tail, iocq_head; u16 aq_id; u32 nsid; u32 cid;
-    u8 *bounce;
+    u8 *bounce; u32 dstrd; u64 mphys; int admin_ok;
 } nvme_ctrl_t;
 
 static blk_dev_t nvme_devs[8]; static int nvme_count=0; static u64 hhdm;
@@ -33,12 +33,17 @@ static inline void wr64(volatile u32 *m,u32 off,u64 v){ m[off/4]=(u32)v; m[off/4
 
 static int nvme_wait_rdy(nvme_ctrl_t*c,int want){ int s=0; while(s++<1000000){ u32 csts=rd32(c->mmio,NVME_CSTS); if((csts&NVME_CSTS_RDY)==(u32)want) return 0; } return -1; }
 
+static inline u32 db_sq(nvme_ctrl_t*c,u16 qid){ return 0x1000 + (u32)(qid*2)*c->dstrd; }
+static inline u32 db_cq(nvme_ctrl_t*c,u16 qid){ return 0x1000 + (u32)(qid*2+1)*c->dstrd; }
+
 static int nvme_admin(nvme_ctrl_t*c, nvme_sqe_t*cmd){
     u16 slot=c->asq_tail % 64; c->asq[slot]=*cmd; c->asq[slot].cid=c->cid++;
-    __asm__ volatile("":::"memory"); c->asq_tail=(c->asq_tail+1)%64; wr32(c->mmio, 0x1000, c->asq_tail); /* SQ0 tail doorbell */
-    int s=0; while(s++<1000000){ nvme_cqe_t*cq=&c->acq[c->acq_head%64]; if((cq->status & 1) == c->aq_id){ /* check status */ u16 st=cq->status>>1; c->acq_head=(c->acq_head+1)%64; wr32(c->mmio, 0x1000+1*4, c->acq_head); /* CQ0 head doorbell */ return (st==0)?0:-1; } }
+    __asm__ volatile("":::"memory"); c->asq_tail=(c->asq_tail+1)%64; wr32(c->mmio, db_sq(c,0), c->asq_tail);
+    int s=0; while(s++<1000000){ nvme_cqe_t*cq=&c->acq[c->acq_head%64]; if(cq->cid==(u16)(c->cid-1)){ u16 st=cq->status>>1; c->acq_head=(c->acq_head+1)%64; wr32(c->mmio, db_cq(c,0), c->acq_head); return (st==0)?0:-1; } }
     return -1;
 }
+static int nvme_set_features(nvme_ctrl_t*c,u8 fid,u32 cdw11){ nvme_sqe_t cmd; for(int k=0;k<(int)sizeof(cmd);k++)((u8*)&cmd)[k]=0; cmd.opcode=0x09; cmd.cdw10=fid; cmd.cdw11=cdw11; return nvme_admin(c,&cmd); }
+static int nvme_reset(nvme_ctrl_t*c){ u32 cc=rd32(c->mmio,NVME_CC); wr32(c->mmio,NVME_CC,cc&~NVME_CC_EN); return nvme_wait_rdy(c,0); }
 
 static int nvme_rw(nvme_ctrl_t*c,u64 lba,u32 count,u8*buf,int write){
     for(u32 i=0;i<count;i++){
@@ -47,8 +52,8 @@ static int nvme_rw(nvme_ctrl_t*c,u64 lba,u32 count,u8*buf,int write){
         nvme_sqe_t cmd; for(int k=0;k<(int)sizeof(cmd);k++) ((u8*)&cmd)[k]=0;
         cmd.opcode=write?1:2; cmd.nsid=c->nsid; cmd.prp1=phys; cmd.cdw10=(u32)(lba+i)&0xFFFFFFFF; cmd.cdw11=(u32)((lba+i)>>32); cmd.cdw12=0; /* nlb-1=0 */
         /* submit I/O sq1 */
-        u16 slot=c->iosq_tail % 64; c->iosq[slot]=cmd; c->iosq[slot].cid=c->cid++; __asm__ volatile("":::"memory"); c->iosq_tail=(c->iosq_tail+1)%64; wr32(c->mmio, 0x1000+2*4, c->iosq_tail); /* SQ1 tail */
-        int s=0; while(s++<1000000){ nvme_cqe_t*cq=&c->iocq[c->iocq_head%64]; if(cq->cid==c->iosq[slot].cid && (cq->status&1)==1){ u16 st=cq->status>>1; c->iocq_head=(c->iocq_head+1)%64; wr32(c->mmio,0x1000+3*4,c->iocq_head); if(!write) for(int j=0;j<512;j++) buf[i*512+j]=c->bounce[j]; if(st!=0) return -1; break; } } if(s>=1000000) return -1;
+        u16 slot=c->iosq_tail % 64; c->iosq[slot]=cmd; c->iosq[slot].cid=c->cid++; __asm__ volatile("":::"memory"); c->iosq_tail=(c->iosq_tail+1)%64; wr32(c->mmio, db_sq(c,1), c->iosq_tail);
+        int s=0; while(s++<1000000){ nvme_cqe_t*cq=&c->iocq[c->iocq_head%64]; if(cq->cid==c->iosq[slot].cid && (cq->status&1)==1){ u16 st=cq->status>>1; c->iocq_head=(c->iocq_head+1)%64; wr32(c->mmio,db_cq(c,1),c->iocq_head); if(!write) for(int j=0;j<512;j++) buf[i*512+j]=c->bounce[j]; if(st!=0) return -1; break; } } if(s>=1000000) return -1;
     }
     return 0;
 }
@@ -65,7 +70,7 @@ void nvme_init(void){
         u32 bar0=pci_read32((u8)bus,dev,fn,0x10); if(bar0&1) continue; u64 mmio=bar0 & ~0xFULL; vmm_map(mmio,mmio,0x3);
         if(nvme_count>=8) break;
         nvme_ctrl_t *c=(nvme_ctrl_t*)kmalloc(sizeof(nvme_ctrl_t)); if(!c) continue;
-        for(int k=0;k<(int)sizeof(*c);k++) ((u8*)c)[k]=0; c->mmio=(volatile u32*)mmio; c->nsid=1; c->aq_id=1;
+        for(int k=0;k<(int)sizeof(*c);k++) ((u8*)c)[k]=0; c->mmio=(volatile u32*)mmio; c->nsid=1; c->aq_id=1; c->dstrd=4 << (rd32(c->mmio, NVME_CAP+4) & 0xF);
         /* disable */
         u32 cc=rd32(c->mmio,NVME_CC); wr32(c->mmio,NVME_CC, cc & ~NVME_CC_EN); nvme_wait_rdy(c,0);
         /* allocate admin + io queues */
@@ -77,6 +82,9 @@ void nvme_init(void){
         if(nvme_wait_rdy(c,1)<0){ log_write("[nvme] not ready\n"); continue; }
         /* identify controller (best effort) */
         nvme_sqe_t idcmd; for(int k=0;k<(int)sizeof(idcmd);k++) ((u8*)&idcmd)[k]=0; idcmd.opcode=0x06; idcmd.nsid=0; idcmd.prp1=(u64)c->dma - hhdm; idcmd.cdw10=1; nvme_admin(c,&idcmd);
+        /* admin feature negotiation: request queues + interrupt coalescing */
+        nvme_set_features(c,0x07, (0u | (0u<<16))); /* NQUEUES request 1 IO SQ + 1 IO CQ */
+        nvme_set_features(c,0x08, 0); /* INTERRUPT_COALESCING off */
         /* create IO CQ + SQ */
         nvme_sqe_t cq; for(int k=0;k<(int)sizeof(cq);k++) ((u8*)&cq)[k]=0; cq.opcode=0x05; cq.prp1=mphys+3*PAGE; cq.cdw10=1 | (63<<16); cq.cdw11=1; nvme_admin(c,&cq);
         nvme_sqe_t sq; for(int k=0;k<(int)sizeof(sq);k++) ((u8*)&sq)[k]=0; sq.opcode=0x01; sq.prp1=mphys+2*PAGE; sq.cdw10=1 | (63<<16); sq.cdw11=1 | (1<<16); sq.cdw12=0; nvme_admin(c,&sq);
