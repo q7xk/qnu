@@ -26,4 +26,5 @@ int vfs_readdir(vfs_node_t *dir, u32 idx, char *name, int max, u32 *type);
 int vfs_remove(const char *path);
 int vfs_copy(const char *src, const char *dst);
 int vfs_rename(const char *src, const char *dst);
+int vfs_mount_fat32(const char *blk,unsigned long long first_lba,const char *target);
 #endif

@@ -101,3 +101,11 @@ int fat32_write_file(const char *blk,u64 first_lba,const char *name,const void *
     blk_dev_t*d=blk_get(f.blk); if(d&&d->write){ for(u32 s=0;s<f.spc;s++) d->write(d,lba+s,1,clbuf+s*512); }
     kfree(clbuf); return 0;
 }
+
+int fat32_list_root(const char *blk,u64 first_lba,char names[][64],int max){
+    fat_t f; u8 sec[512]; f.blk=blk; f.first=first_lba; if(read_sec(&f,first_lba,sec)<0) return -1;
+    f.bps=rd16(sec+11); f.spc=sec[13]; f.rsvd=rd16(sec+14); f.nfats=sec[16]; f.fatsz=rd32(sec+36); f.root_clus=rd32(sec+44); if(f.bps!=512||f.spc==0||f.fatsz==0) return -1;
+    u8 *clbuf=(u8*)kmalloc((u64)f.spc*512); if(!clbuf) return -1; if(read_cluster(&f,f.root_clus,clbuf)<0){kfree(clbuf);return -1;}
+    int n=0; for(u32 off=0;off+32<=(u32)f.spc*512 && n<max;off+=32){ u8*e=clbuf+off; if(e[0]==0) break; if(e[0]==0xE5) continue; if(e[11]==0x0F) continue; if(e[11]&0x10) continue; int ni=0; for(int i=0;i<8&&e[i]!=' ';i++) names[n][ni++]=e[i]; if(e[8]!=' '){ names[n][ni++]='.'; for(int i=8;i<11&&e[i]!=' ';i++) names[n][ni++]=e[i]; } names[n][ni]=0; n++; }
+    kfree(clbuf); return n;
+}

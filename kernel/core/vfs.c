@@ -155,3 +155,17 @@ int vfs_rename(const char *src, const char *dst){
     str_cp(n->name,name,64); n->parent=ndir; n->next=ndir->children; ndir->children=n; return 0;
 }
 
+
+int vfs_mount_fat32(const char *blk,unsigned long long first_lba,const char *target){
+    extern int fat32_list_root(const char*,u64,char(*)[64],int);
+    extern int fat32_read_file(const char*,u64,const char*,void*,u64,u64*);
+    extern int mount_add(const char*,const char*,const char*,u64);
+    if(!target) target="/mnt"; vfs_mkdir(target);
+    char names[64][64]; int n=fat32_list_root(blk,first_lba,names,64); if(n<0) return -1;
+    for(int i=0;i<n;i++){
+        char path[160]; int tl=0; while(target[tl]) tl++; int p=0; for(;p<tl&&p<100;p++) path[p]=target[p]; if(p>0&&path[p-1]!='/') path[p++]='/'; int q=0; while(names[i][q]&&p<150){path[p++]=names[i][q];q++;} path[p]=0;
+        vfs_node_t *node=vfs_create(path,VFS_FILE); if(!node) continue;
+        u8 *tmp=(u8*)kmalloc(65536); if(!tmp) continue; u64 sz=0; if(fat32_read_file(blk,first_lba,names[i],tmp,65536,&sz)==0) vfs_write(node,0,tmp,sz); kfree(tmp);
+    }
+    mount_add(blk,target,"fat32",first_lba); return n;
+}

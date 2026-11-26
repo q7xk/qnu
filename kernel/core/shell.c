@@ -66,7 +66,8 @@ static void run_cmd(const char *cmd) {
                 extern int fat32_fsck(const char*, unsigned long long);
                 extern int mount_add(const char*,const char*,const char*,unsigned long long);
                 u64 first=0; /* TODO partition scan simplified */
-                if(mount_add(src,*tgt?tgt:"/mnt","fat32",first)==0){ fat32_fsck(blkname,first); log_write("mount: fat32 mounted (read-write API available; VFS read-through limited)\n"); } else log_write("mount: err\n");
+                extern int vfs_mount_fat32(const char*,unsigned long long,const char*);
+                int mn=vfs_mount_fat32(blkname,first,*tgt?tgt:"/mnt"); if(mn>=0){ fat32_fsck(blkname,first); log_printf("mount: fat32 mounted, %d files\n", mn); } else { if(mount_add(src,*tgt?tgt:"/mnt","fat32",first)==0){fat32_fsck(blkname,first);log_write("mount: fat32 registered (no files)\n");} else log_write("mount: err\n"); }
             } else log_write("mount: only -t fat32 supported currently\n");
         } else { log_write("ramfs on / type ramfs (rw,subvol,cow,checksum)\n"); extern void mount_list(void); mount_list(); }
     }
