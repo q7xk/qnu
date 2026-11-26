@@ -43,7 +43,7 @@ void kmain(void) {
     log_init();
     console_init(bi->fb_addr, bi->fb_width, bi->fb_height, bi->fb_pitch, bi->fb_bpp);
 
-    log_write("QNU Kernel 0.0.8\n");
+    log_write("QNU Kernel 0.0.9\n");
     log_write("Independent Operating System Kernel\n\n");
     log_write("Architecture: x86_64\n");
     log_write("Boot: UEFI/BIOS (Limine)\n");
@@ -76,6 +76,11 @@ void kmain(void) {
     vfs_create("/hello.txt", VFS_FILE);
     vfs_write(vfs_lookup("/hello.txt"), 0, "Hello from QNU ramfs\n", 21);
     { extern void userland_install(void); userland_install(); }
+    vfs_mkdir("/dev");
+    { vfs_node_t*n=vfs_create("/dev/null",VFS_FILE); if(n) n->flags|=VFS_DEV; }
+    { vfs_node_t*n=vfs_create("/dev/zero",VFS_FILE); if(n) n->flags|=VFS_DEV; }
+    { vfs_node_t*n=vfs_create("/dev/console",VFS_FILE); if(n) n->flags|=VFS_DEV; }
+    { vfs_node_t*n=vfs_create("/proc",VFS_DIR); if(n) n->flags|=VFS_DEV; }
     proc_init();
     syscall_init();
 

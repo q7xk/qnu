@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.8
+# QNU Kernel 0.0.9
 
 **An independent kernel, built from the ground up.**
 
@@ -8,24 +8,25 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.8`
+- Version: `0.0.9`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.8 Features
+## 0.0.9 Features
 
 - Per-process address space isolation: separate PML4, kernel-half sharing, CR3 switch on exec
 - Ring 3 usermode (`iretq`), TSS.RSP0, per-process kernel syscall stack
 - ELF64 loader (PT_LOAD segments, user mappings)
-- POSIX-like syscall ABI foundation: `read/write/open/close/fstat/brk/getpid/exit/exit_group/uname/getcwd/chdir/arch_prctl`
+- Syscall ABI expanded: `read/write/open/close/fstat/ioctl/pipe/dup/dup2/brk/getpid/exit/wait4(stub)/kill/uname/getcwd/chdir/getppid/arch_prctl/getdents64/clock_gettime(stub)/exit_group`
+- `/dev/null`, `/dev/zero`, `/dev/console`, `/proc` VFS nodes; basic pipe/dup fd types
 - Process basics: process table, pid/ppid, fd table, exec/exit/kill/ps scaffolding
 - Minimal in-tree userland libc/syscall wrappers; static ELF64 binaries in `/bin` (`hello`, `uname`, `echo`, `cat`)
 - Shell `exec` command runs real ELF binaries from VFS
 - GNU/FreeBSD-like shell builtins retained
-- **Limitations**: not full POSIX/Linux/FreeBSD ABI; no glibc/musl/FreeBSD libc; no isolated per-process VM; TTY/signal/process are minimal; real GNU/FreeBSD userland binaries not yet ported
+- **Limitations**: no preemptive user multitasking/fork/wait yet; no full POSIX signals/tty/job control; no real ext/minix disk FS; no real GNU/FreeBSD ports
 
 ## Project Structure
 

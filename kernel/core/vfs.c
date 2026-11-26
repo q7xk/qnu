@@ -123,6 +123,14 @@ void vfs_info(const char *path){
     log_printf("name=%s type=%s flags=%x size=%lu checksum=%x\n", n->name, n->type==VFS_DIR?"dir":"file", n->flags, n->size, n->checksum);
 }
 
+int vfs_readdir(vfs_node_t *dir, u32 idx, char *name, int max, u32 *type){
+    if(!dir || dir->type!=VFS_DIR) return -1;
+    u32 i=0; for(vfs_node_t*c=dir->children;c;c=c->next, i++){
+        if(i==idx){ int j=0; for(;c->name[j] && j<max-1;j++) name[j]=c->name[j]; name[j]=0; if(type)*type=c->type; return 1; }
+    }
+    return 0;
+}
+
 int vfs_remove(const char *path){
     vfs_node_t *n=vfs_lookup(path); if(!n||n==&root) return -1;
     vfs_node_t *dir=n->parent; if(!dir) return -1;

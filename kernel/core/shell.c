@@ -42,7 +42,7 @@ static void run_cmd(const char *cmd) {
     if (streq(a,"help")) {
         log_write("GNU/FreeBSD-like builtins: help uname echo pwd cd ls cat touch mkdir rm cp mv ps df mount env id whoami date uptime free sysctl info subvol snap wifi bluetooth pci acpi cpu mem heap memmap ticks reboot clear\n");
     } else if (streq(a,"uname")) {
-        if(streq(p1,"-a")) log_write("QNU qnu 0.0.8 QNU Kernel x86_64\n");
+        if(streq(p1,"-a")) log_write("QNU qnu 0.0.9 QNU Kernel x86_64\n");
         else log_write("QNU\n");
     } else if (streq(a,"echo")) { log_write(rest); log_write("\n"); }
     else if (streq(a,"pwd")) { log_write(cwd); log_write("\n"); }
@@ -61,7 +61,7 @@ static void run_cmd(const char *cmd) {
     else if (streq(a,"id")||streq(a,"whoami")) { log_write("kullanici uid=0 gid=0\n"); }
     else if (streq(a,"date")||streq(a,"uptime")) { extern u64 pit_get_ticks(void); u64 t=pit_get_ticks(); log_printf("uptime %lu seconds\n", t/100); }
     else if (streq(a,"free")) { const struct qnu_boot_info*bi=boot_info_get(); u64 t=0,u=0; heap_stats(&t,&u); log_printf("mem total=%luMB usable=%luMB free_pages=%lu heap_used=%lu\n", bi->total_memory/1024/1024, bi->usable_memory/1024/1024, pmm_free_pages(), u); }
-    else if (streq(a,"sysctl")) { log_write("kernel.name=QNU\nkernel.version=0.0.8\nkernel.arch=x86_64\nvm.heap=slab+free-list\nfs.root=ramfs\n"); }
+    else if (streq(a,"sysctl")) { log_write("kernel.name=QNU\nkernel.version=0.0.9\nkernel.arch=x86_64\nvm.heap=slab+free-list\nfs.root=ramfs\n"); }
     else if (streq(a,"info")) { vfs_info(*p1?r1:cwd); }
     else if (streq(a,"subvol")) { if(*p1){ if(vfs_subvol_create(r1)){} else log_write("subvol: err\n"); } }
     else if (streq(a,"snap")) { if(*p1&&*p2){ if(vfs_snapshot(r1,r2)==0){} else log_write("snap: err\n"); } else log_write("usage: snap <src> <dst>\n"); }
@@ -77,7 +77,7 @@ static void run_cmd(const char *cmd) {
     else if (streq(a,"reboot")) { log_write("Rebooting...\n"); struct {u16 l;u64 b;} __attribute__((packed)) idtr={0,0}; __asm__ volatile("lidt %0; int $0x03"::"m"(idtr)); }
     else if (streq(a,"clear")) { log_write("\n"); }
     else if (streq(a,"exec")) { if(*p1){ int rc=proc_exec(r1,NULL); log_printf("[exec] rc=%d\n", rc); } else log_write("usage: exec /bin/hello\n"); }
-    else if (streq(a,"version")) { log_write("QNU Kernel 0.0.8\n"); }
+    else if (streq(a,"version")) { log_write("QNU Kernel 0.0.9\n"); }
     else if (len>0) { log_printf("sh: command not found: %s\n", a); }
 }
 
