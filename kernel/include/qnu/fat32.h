@@ -3,4 +3,5 @@
 #include <qnu/types.h>
 int fat32_read_file(const char *blk,u64 first_lba,const char *name,void *buf,u64 max,u64 *out_size);
 int fat32_fsck(const char *blk,u64 first_lba);
+int fat32_write_file(const char *blk,u64 first_lba,const char *name,const void *buf,u64 len);
 #endif

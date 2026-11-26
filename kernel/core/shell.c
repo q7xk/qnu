@@ -56,7 +56,22 @@ static void run_cmd(const char *cmd) {
     else if (streq(a,"mv")) { if(*p1&&*p2){ if(vfs_rename(r1,r2)==0){} else log_write("mv: err\n"); } }
     else if (streq(a,"ps")) { sched_ps(); }
     else if (streq(a,"df")) { const struct qnu_boot_info*bi=boot_info_get(); log_printf("Filesystem 1K-blocks Used Available Use%% Mounted\nramfs %lu %lu %lu 0%% /\n", bi->total_memory/1024, (bi->total_memory-bi->usable_memory)/1024, bi->usable_memory/1024); }
-    else if (streq(a,"mount")) { log_write("ramfs on / type ramfs (rw,subvol,cow,checksum)\n"); }
+    else if (streq(a,"mount")) {
+        if(*p1 && streq(p1,"-t")){
+            /* mount -t fat32 <source> <target> */
+            char dummy[16], fs[16], src[32], tgt[64]; const char *r=rest; next_arg(&r,dummy,16); next_arg(&r,fs,16); next_arg(&r,src,32); next_arg(&r,tgt,64);
+            if(streq(fs,"fat32")){
+                const char *blkname = src; if(starts(blkname,"/dev/")) blkname=src+5;
+                extern int part_scan_mbr(const char*, void*, int);
+                extern int fat32_fsck(const char*, unsigned long long);
+                extern int mount_add(const char*,const char*,const char*,unsigned long long);
+                u64 first=0; /* TODO partition scan simplified */
+                if(mount_add(src,*tgt?tgt:"/mnt","fat32",first)==0){ fat32_fsck(blkname,first); log_write("mount: fat32 mounted (read-write API available; VFS read-through limited)\n"); } else log_write("mount: err\n");
+            } else log_write("mount: only -t fat32 supported currently\n");
+        } else { log_write("ramfs on / type ramfs (rw,subvol,cow,checksum)\n"); extern void mount_list(void); mount_list(); }
+    }
+    else if (streq(a,"umount")) { log_write("umount: not implemented\n"); }
+    else if (streq(a,"fsck")) { extern int fat32_fsck(const char*,unsigned long long); const char *blkname=*p1?p1:"vda"; if(starts(blkname,"/dev/")) blkname=p1+5; if(fat32_fsck(blkname,0)==0) log_write("fsck: ok\n"); else log_write("fsck: err\n"); }
     else if (streq(a,"env")) { log_write("PATH=/bin\nHOME=/home/kullanici\nSHELL=/bin/qsh\nOS=QNU\n"); }
     else if (streq(a,"id")||streq(a,"whoami")) { log_write("kullanici uid=0 gid=0\n"); }
     else if (streq(a,"date")||streq(a,"uptime")) { extern u64 pit_get_ticks(void); u64 t=pit_get_ticks(); log_printf("uptime %lu seconds\n", t/100); }
