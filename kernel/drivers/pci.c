@@ -64,3 +64,6 @@ void pci_storage_dump(void){
     }
     if(!found) log_write(" No storage controllers detected\n");
 }
+
+u32 pci_read32(u8 bus,u8 dev,u8 func,u8 off){ return pci_read(bus,dev,func,off); }
+void pci_write32(u8 bus,u8 dev,u8 func,u8 off,u32 val){ u32 addr=(1u<<31)|((u32)bus<<16)|((u32)dev<<11)|((u32)func<<8)|(off&0xFC); __asm__ volatile("outl %0,%1"::"a"(addr),"Nd"((u16)0xCF8)); __asm__ volatile("outl %0,%1"::"a"(val),"Nd"((u16)0xCFC)); }

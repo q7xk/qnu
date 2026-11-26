@@ -87,3 +87,13 @@ void pmm_free_page(void *page) {
 }
 
 u64 pmm_free_pages(void) { return free_pages_count; }
+
+void *pmm_alloc_pages(u64 count) {
+    if (count == 0) return NULL;
+    u64 run = 0, start = 0;
+    for (u64 i = 0; i < total_pages; i++) {
+        if (!bm_test(i)) { if (run==0) start=i; run++; if (run>=count){ for(u64 j=start;j<start+count;j++){ bm_set(j); if(free_pages_count)free_pages_count--; } void *addr=(void*)(start*PAGE_SIZE+hhdm); u8*b=(u8*)addr; for(u64 k=0;k<count*PAGE_SIZE;k++)b[k]=0; return addr; } }
+        else run=0;
+    }
+    return NULL;
+}

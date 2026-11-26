@@ -13,4 +13,7 @@ int blk_register(blk_dev_t *dev);
 blk_dev_t *blk_get(const char *name);
 int blk_read(const char *name, u64 lba, u32 count, void *buf);
 void blk_init(void);
+typedef void (*blk_async_cb)(int result, void *arg);
+/* async API: currently completes synchronously (no DMA/interrupt queue yet) */
+int blk_read_async(const char *name, u64 lba, u32 count, void *buf, blk_async_cb cb, void *arg);
 #endif

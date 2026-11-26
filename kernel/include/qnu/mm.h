@@ -3,6 +3,7 @@
 #include <qnu/types.h>
 void pmm_init(void);
 void *pmm_alloc_page(void);
+void *pmm_alloc_pages(u64 count);
 void pmm_free_page(void *page);
 u64 pmm_free_pages(void);
 
