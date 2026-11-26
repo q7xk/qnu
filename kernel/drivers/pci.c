@@ -48,3 +48,19 @@ void pci_wireless_dump(void) {
     }
     if(!found) log_write(" No WiFi/BLE PCI controllers detected. USB wireless devices unsupported (no USB stack).\n");
 }
+
+
+void pci_usb_dump(void){
+    int found=0;
+    for(int i=0;i<count && i<128;i++){
+        if(devs[i].cls==0x0C && devs[i].sub==0x03){ log_printf(" USB controller: %x:%x.%u vend=%x dev=%x progif? xHCI/EHCI/UHCI\n", devs[i].bus,devs[i].dev,devs[i].func,devs[i].vend,devs[i].dev_id); found++; }
+    }
+    if(!found) log_write(" No USB controllers detected\n");
+}
+void pci_storage_dump(void){
+    int found=0;
+    for(int i=0;i<count && i<128;i++){
+        if(devs[i].cls==0x01){ log_printf(" Storage controller: %x:%x.%u vend=%x dev=%x class=%x:%x\n", devs[i].bus,devs[i].dev,devs[i].func,devs[i].vend,devs[i].dev_id,devs[i].cls,devs[i].sub); found++; }
+    }
+    if(!found) log_write(" No storage controllers detected\n");
+}
