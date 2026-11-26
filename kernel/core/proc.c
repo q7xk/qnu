@@ -28,7 +28,9 @@ proc_t *proc_alloc(const char *name){
             for(int j=0;j<(int)sizeof(*p);j++) ((u8*)p)[j]=0;
             p->pid=next_pid++;
             p->ppid=current?current->pid:0;
+            p->uid=0; p->gid=0;
             p->state=PROC_READY;
+            p->waited=0;
             for(int j=0;j<31&&name[j];j++) p->name[j]=name[j];
             for(int j=0;j<PROC_FD_MAX;j++) p->fds[j].used=false;
             return p;
@@ -102,4 +104,24 @@ int proc_exec(const char *path, char *const argv[]){
     if(current==p && p->state==PROC_RUNNING) p->state=PROC_ZOMBIE;
     current=NULL;
     return p->exit_code;
+}
+
+
+int proc_fork(void){ return -38; /* ENOSYS - needs preemptive user scheduling */ }
+
+int proc_execve(const char *path, char *const argv[], char *const envp[]){
+    (void)envp;
+    return proc_exec(path, (char*const*)argv);
+}
+
+i64 proc_wait4(int pid, int *status, int options){
+    (void)options;
+    for(int i=0;i<MAX_PROC;i++){
+        proc_t *p=&procs[i];
+        if(p->state==PROC_ZOMBIE && (pid==-1 || p->pid==pid || (pid==0 && p->ppid==(current?current->pid:0)))){
+            if(status) *status = (p->exit_code & 0xff) << 8;
+            int rpid=p->pid; p->state=PROC_UNUSED; p->waited=1; return rpid;
+        }
+    }
+    return -10; /* ECHILD/no child */
 }

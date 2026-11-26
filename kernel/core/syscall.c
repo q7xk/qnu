@@ -5,6 +5,7 @@
 #include <qnu/proc.h>
 #include <qnu/boot.h>
 #include <qnu/sched.h>
+#include <qnu/uaccess.h>
 
 #define MAX_FD 64
 #define FD_FILE 1
@@ -43,7 +44,7 @@ i64 syscall_dispatch(u64 n,u64 a1,u64 a2,u64 a3,u64 a4,u64 a5){
     proc_t *cur = proc_current();
     switch(n){
         case 0: { /* read */
-            u64 fd=a1; char*buf=(char*)a2; u64 len=a3;
+            u64 fd=a1; char*buf=(char*)a2; u64 len=a3; if(len>0 && !user_range_ok(buf,len)) return -14;
             if(fd>=MAX_FD || !fds[fd].used) return -1;
             if(fds[fd].type==FD_FILE){
                 vfs_node_t*node=fds[fd].node;
@@ -58,7 +59,7 @@ i64 syscall_dispatch(u64 n,u64 a1,u64 a2,u64 a3,u64 a4,u64 a5){
             return -1;
         }
         case 1: { /* write */
-            u64 fd=a1; const char*buf=(const char*)a2; u64 len=a3;
+            u64 fd=a1; const char*buf=(const char*)a2; u64 len=a3; if(len>0 && !user_range_ok(buf,len)) return -14;
             if(fd==1||fd==2){ for(u64 i=0;i<len;i++){ char c[2]={buf[i],0}; log_write(c);} return (i64)len; }
             if(fd>=MAX_FD || !fds[fd].used) return -1;
             if(fds[fd].type==FD_FILE){
@@ -81,7 +82,7 @@ i64 syscall_dispatch(u64 n,u64 a1,u64 a2,u64 a3,u64 a4,u64 a5){
         case 5: return 0; /* fstat stub */
         case 16: return 0; /* ioctl stub */
         case 22: { /* pipe */
-            int *pfd=(int*)a1; pipe_t*p=(pipe_t*)kmalloc(sizeof(pipe_t)); if(!p) return -1;
+            int *pfd=(int*)a1; if(!user_range_ok(pfd,sizeof(int)*2)) return -14; pipe_t*p=(pipe_t*)kmalloc(sizeof(pipe_t)); if(!p) return -1;
             p->r=p->w=p->count=0; p->readers=1; p->writers=1;
             int r=fd_alloc_pipe(p,FD_PIPE_R), w=fd_alloc_pipe(p,FD_PIPE_W);
             if(r<0||w<0) return -1; pfd[0]=r; pfd[1]=w; return 0;
@@ -105,9 +106,12 @@ i64 syscall_dispatch(u64 n,u64 a1,u64 a2,u64 a3,u64 a4,u64 a5){
         }
         case 39: return cur?cur->pid:1;
         case 60: proc_exit((int)a1); proc_exit_requested=1; return 0;
-        case 61: return -1; /* wait4 stub - no child process model yet */
+        case 57: return proc_fork();
+        case 59: { /* execve - minimal: path only */ const char*path=(const char*)a1; return proc_execve(path,0,0); }
+        case 61: { int *st=(int*)a2; if(st && !user_range_ok(st,sizeof(int))) return -14; int kst=0; i64 r=proc_wait4((int)a1,&kst,(int)a3); if(r>0 && st) *st=kst; return r; }
         case 62: return proc_kill((int)a1,(int)a2); /* kill */
         case 63: { /* uname */
+            if(!user_range_ok((void*)a1,sizeof(struct { char s[65],n[65],r[65],v[65],m[65]; }))) return -14;
             struct { char sysname[65],nodename[65],release[65],version[65],machine[65]; } *u = (void*)a1;
             const char *sn="QNU", *nn="qnu", *rl="0.0.9", *ver="QNU 0.0.9", *ma="x86_64";
             for(int i=0;i<65;i++){ u->sysname[i]=0;u->nodename[i]=0;u->release[i]=0;u->version[i]=0;u->machine[i]=0; }
@@ -118,12 +122,21 @@ i64 syscall_dispatch(u64 n,u64 a1,u64 a2,u64 a3,u64 a4,u64 a5){
             for(int i=0;ma[i]&&i<64;i++)u->machine[i]=ma[i];
             return 0;
         }
-        case 79: { char *buf=(char*)a1; u64 len=a2; int i=0; while(cwd_buf[i] && (u64)i+1<len){ buf[i]=cwd_buf[i]; i++; } buf[i]=0; return (i64)buf; }
+        case 79: { char *buf=(char*)a1; u64 len=a2; if(len>0 && !user_range_ok(buf,len)) return -14; int i=0; while(cwd_buf[i] && (u64)i+1<len){ buf[i]=cwd_buf[i]; i++; } buf[i]=0; return (i64)buf; }
         case 80: { const char*p=(const char*)a1; vfs_node_t*n=vfs_lookup(p); if(!n||n->type!=VFS_DIR) return -1; int i=0; for(;p[i]&&i<127;i++)cwd_buf[i]=p[i]; cwd_buf[i]=0; return 0; }
+        case 9: return -38; /* mmap stub */
+        case 10: return 0; /* mprotect stub */
+        case 11: return 0; /* munmap stub */
+        case 102: return cur?cur->uid:0;
+        case 104: return cur?cur->gid:0;
+        case 105: if(cur) cur->uid=(u32)a1; return 0;
+        case 107: return cur?cur->uid:0;
+        case 108: return cur?cur->gid:0;
         case 110: return cur?cur->ppid:0; /* getppid */
         case 158: return 0; /* arch_prctl stub */
         case 217: { /* getdents64 - minimal */
-            int fd=(int)a1; struct { u64 d_ino; i64 d_off; unsigned short d_reclen; unsigned char d_type; char d_name[]; } *dent;
+            int fd=(int)a1; if(a3>0 && !user_range_ok((void*)a2,a3)) return -14;
+            struct { u64 d_ino; i64 d_off; unsigned short d_reclen; unsigned char d_type; char d_name[]; } *dent;
             if(fd<0||fd>=MAX_FD||!fds[fd].used||fds[fd].type!=FD_FILE) return -1;
             vfs_node_t*dir=fds[fd].node; if(!dir||dir->type!=VFS_DIR) return -1;
             char name[64]; u32 type=0; u32 idx=(u32)fds[fd].off;

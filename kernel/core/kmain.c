@@ -68,6 +68,8 @@ void kmain(void) {
     lapic_init();
     ioapic_init();
     pci_init();
+    { extern void smp_init(void); smp_init(); }
+    { extern void modules_init(void); modules_init(); }
     vfs_init();
     vfs_mkdir("/home");
     vfs_subvol_create("/home/kullanici");
@@ -81,6 +83,9 @@ void kmain(void) {
     { vfs_node_t*n=vfs_create("/dev/zero",VFS_FILE); if(n) n->flags|=VFS_DEV; }
     { vfs_node_t*n=vfs_create("/dev/console",VFS_FILE); if(n) n->flags|=VFS_DEV; }
     { vfs_node_t*n=vfs_create("/proc",VFS_DIR); if(n) n->flags|=VFS_DEV; }
+    { vfs_node_t*n=vfs_create("/proc/version",VFS_FILE); if(n){ const char*s="QNU version 0.0.9\n"; vfs_write(n,0,s,18); } }
+    { vfs_node_t*n=vfs_create("/proc/cpuinfo",VFS_FILE); if(n){ const char*s="processor: 0\narch: x86_64\n"; vfs_write(n,0,s,26); } }
+    { vfs_node_t*n=vfs_create("/proc/meminfo",VFS_FILE); if(n){ const char*s="MemTotal: available\n"; vfs_write(n,0,s,20); } }
     proc_init();
     syscall_init();
 
