@@ -10,10 +10,18 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 - Version: `0.0.9`
 - Stage: Experimental / Pre-alpha
-- Architecture: `x86_64`
+- Architecture: `x86_64` (primary), `aarch64`/`riscv64` (scaffold)
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
+
+## Multi-arch (scaffold)
+
+```bash
+make ARCH=x86_64          # full kernel
+make ARCH=aarch64         # aarch64 scaffold (compiles, minimal)
+make ARCH=riscv64         # riscv64 scaffold (compiles, minimal)
+```
 
 ## 0.0.9 Features
 

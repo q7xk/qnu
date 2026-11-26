@@ -89,11 +89,23 @@ pub unsafe extern "C" fn rust_crc32(data: *const u8, len: u64) -> u32 {
 #[no_mangle]
 pub extern "C" fn hal_init() {}
 #[no_mangle]
-pub extern "C" fn hal_cpu_halt() { unsafe { core::arch::asm!("hlt"); } }
+pub extern "C" fn hal_cpu_halt() {
+    #[cfg(target_arch="x86_64")] unsafe { core::arch::asm!("hlt"); }
+    #[cfg(target_arch="aarch64")] unsafe { core::arch::asm!("wfe"); }
+    #[cfg(any(target_arch="riscv64", target_arch="riscv32"))] unsafe { core::arch::asm!("wfi"); }
+}
 #[no_mangle]
-pub extern "C" fn hal_irq_enable() { unsafe { core::arch::asm!("sti"); } }
+pub extern "C" fn hal_irq_enable() {
+    #[cfg(target_arch="x86_64")] unsafe { core::arch::asm!("sti"); }
+    #[cfg(target_arch="aarch64")] unsafe { core::arch::asm!("msr daifclr, #2"); }
+    #[cfg(any(target_arch="riscv64", target_arch="riscv32"))] unsafe { core::arch::asm!("csrsi mstatus, 8"); }
+}
 #[no_mangle]
-pub extern "C" fn hal_irq_disable() { unsafe { core::arch::asm!("cli"); } }
+pub extern "C" fn hal_irq_disable() {
+    #[cfg(target_arch="x86_64")] unsafe { core::arch::asm!("cli"); }
+    #[cfg(target_arch="aarch64")] unsafe { core::arch::asm!("msr daifset, #2"); }
+    #[cfg(any(target_arch="riscv64", target_arch="riscv32"))] unsafe { core::arch::asm!("csrci mstatus, 8"); }
+}
 #[no_mangle]
 pub extern "C" fn hal_timer_ticks() -> u64 { unsafe { pit_get_ticks() } }
 
@@ -107,11 +119,14 @@ pub extern "C" fn pit_get_ticks() -> u64 { unsafe { core::ptr::read_volatile(&PI
 pub extern "C" fn pit_init(hz_in: u32) {
     let mut hz = hz_in; if hz == 0 { hz = 100; }
     let mut divisor = 1193182u32 / hz; if divisor == 0 { divisor = 1; } if divisor > 0xFFFF { divisor = 0xFFFF; }
+    #[cfg(target_arch="x86_64")]
     unsafe {
         core::arch::asm!("out dx, al", in("dx") 0x43u16, in("al") 0x36u8, options(nomem, nostack, preserves_flags));
         core::arch::asm!("out dx, al", in("dx") 0x40u16, in("al") (divisor & 0xFF) as u8, options(nomem, nostack, preserves_flags));
         core::arch::asm!("out dx, al", in("dx") 0x40u16, in("al") ((divisor >> 8) & 0xFF) as u8, options(nomem, nostack, preserves_flags));
     }
+    #[cfg(not(target_arch="x86_64"))]
+    let _ = divisor;
 }
 
 #[no_mangle]
@@ -119,7 +134,12 @@ pub unsafe extern "C" fn panic(msg: *const u8) -> ! {
     log_write(b"\n[KERNEL PANIC] \0".as_ptr());
     if !msg.is_null() { log_write(msg); } else { log_write(b"(unknown)\0".as_ptr()); }
     log_write(b"\n\0".as_ptr());
-    loop { core::arch::asm!("cli; hlt"); }
+    loop {
+        #[cfg(target_arch="x86_64")] core::arch::asm!("cli; hlt");
+        #[cfg(target_arch="aarch64")] core::arch::asm!("msr daifset, #2; wfe");
+        #[cfg(any(target_arch="riscv64", target_arch="riscv32"))] core::arch::asm!("csrci mstatus, 8; wfi");
+        #[cfg(not(any(target_arch="x86_64",target_arch="aarch64",target_arch="riscv64",target_arch="riscv32")))] core::hint::spin_loop();
+    }
 }
 
 #[no_mangle]
@@ -135,5 +155,10 @@ pub unsafe extern "C" fn qnu_assert(cond: bool, expr: *const u8, file: *const u8
 
 #[panic_handler]
 fn rust_panic_handler(_info: &PanicInfo) -> ! {
-    loop { unsafe { core::arch::asm!("hlt"); } }
+    loop {
+        #[cfg(target_arch="x86_64")] unsafe { core::arch::asm!("hlt"); }
+        #[cfg(target_arch="aarch64")] unsafe { core::arch::asm!("wfe"); }
+        #[cfg(any(target_arch="riscv64", target_arch="riscv32"))] unsafe { core::arch::asm!("wfi"); }
+        #[cfg(not(any(target_arch="x86_64",target_arch="aarch64",target_arch="riscv64",target_arch="riscv32")))] core::hint::spin_loop();
+    }
 }
