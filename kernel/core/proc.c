@@ -67,15 +67,19 @@ int proc_exec(const char *path, char *const argv[]){
     if(!f || f->type!=VFS_FILE || !f->data || f->size==0){ log_write("exec: not found\n"); return -1; }
     proc_t *p=proc_alloc(path);
     if(!p){ log_write("exec: no proc\n"); return -1; }
+    u64 cr3 = vmm_new_address_space();
+    if(!cr3){ log_write("exec: no cr3\n"); p->state=PROC_UNUSED; return -1; }
+    p->cr3 = cr3;
+    u64 *pml4_root = (u64*)(cr3 + boot_info_get()->hhdm_offset);
     u64 entry=0;
-    if(!elf_load(f->data, f->size, &entry)){ log_write("exec: bad elf\n"); p->state=PROC_UNUSED; return -1; }
+    if(!elf_load(f->data, f->size, &entry, pml4_root)){ log_write("exec: bad elf\n"); p->state=PROC_UNUSED; return -1; }
     /* allocate user stack */
     u64 ustack_top = 0x00007FFFFFFFE000ULL;
     u64 hhdm = boot_info_get()->hhdm_offset;
     for(int i=0;i<16;i++){
         void *pg=pmm_alloc_page(); if(!pg){ p->state=PROC_UNUSED; return -1; }
         u64 phys=(u64)pg-hhdm;
-        vmm_map(ustack_top - (u64)(i+1)*0x1000, phys, 0x7);
+        vmm_map_to(pml4_root, ustack_top - (u64)(i+1)*0x1000, phys, 0x7);
     }
     p->entry=entry;
     p->user_rsp = ustack_top - 8;
@@ -87,11 +91,14 @@ int proc_exec(const char *path, char *const argv[]){
     p->kernel_rsp = ((u64)kstack + 16384) & ~0xFULL;
     p->state=PROC_RUNNING;
     current=p;
+    u64 old_cr3 = vmm_get_pml4();
     tss_set_rsp0(p->kernel_rsp);
     syscall_set_kernel_rsp(p->kernel_rsp);
+    vmm_switch(p->cr3);
     log_printf("[proc] exec %s pid=%d entry=%lx\n", path, p->pid, entry);
     enter_user(entry, p->user_rsp);
-    /* if enter_user returns (via syscall exit), mark zombie */
+    /* returned via syscall exit */
+    vmm_switch(old_cr3);
     if(current==p && p->state==PROC_RUNNING) p->state=PROC_ZOMBIE;
     current=NULL;
     return p->exit_code;

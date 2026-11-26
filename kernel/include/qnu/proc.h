@@ -20,6 +20,7 @@ typedef struct proc {
     u64 kernel_rsp;
     u64 brk;
     u64 brk_base;
+    u64 cr3;
     proc_fd_t fds[PROC_FD_MAX];
     int exit_code;
 } proc_t;

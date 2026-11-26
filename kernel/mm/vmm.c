@@ -25,13 +25,12 @@ static u64 *get_next(u64 *table, u64 idx, bool alloc) {
     return (u64 *)p;
 }
 
-void vmm_map(u64 virt, u64 phys, u64 flags) {
+void vmm_map_to(u64 *pml4_root, u64 virt, u64 phys, u64 flags) {
     u64 pml4_i = (virt >> 39) & 0x1FF;
     u64 pdpt_i = (virt >> 30) & 0x1FF;
     u64 pd_i   = (virt >> 21) & 0x1FF;
     u64 pt_i   = (virt >> 12) & 0x1FF;
-
-    u64 *pdpt = get_next(pml4, pml4_i, true);
+    u64 *pdpt = get_next(pml4_root, pml4_i, true);
     u64 *pd   = get_next(pdpt, pdpt_i, true);
     u64 *pt   = get_next(pd, pd_i, true);
     if (!pdpt || !pd || !pt) panic("VMM map: out of memory");
@@ -39,7 +38,18 @@ void vmm_map(u64 virt, u64 phys, u64 flags) {
     __asm__ volatile("invlpg (%0)" :: "r"(virt) : "memory");
 }
 
+void vmm_map(u64 virt, u64 phys, u64 flags) { vmm_map_to(pml4, virt, phys, flags); }
+
 u64 vmm_get_pml4(void) { return (u64)pml4 - hhdm; }
+
+u64 vmm_new_address_space(void) {
+    u64 *new_pml4 = (u64 *)pmm_alloc_page();
+    if (!new_pml4) return 0;
+    for (int i=256; i<512; i++) new_pml4[i] = pml4[i]; /* share kernel higher half */
+    return (u64)new_pml4 - hhdm;
+}
+
+void vmm_switch(u64 pml4_phys) { write_cr3(pml4_phys); }
 
 void vmm_init(void) {
     hhdm = boot_info_get()->hhdm_offset;

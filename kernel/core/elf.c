@@ -8,7 +8,7 @@ typedef struct { u32 p_type,p_flags; u64 p_offset,p_vaddr,p_paddr,p_filesz,p_mem
 #define PT_LOAD 1
 #define PF_W 2
 
-u64 elf_load(const u8 *data, u64 size, u64 *entry_out){
+u64 elf_load(const u8 *data, u64 size, u64 *entry_out, u64 *pml4_root){
     if(size < sizeof(Elf64_Ehdr)) return 0;
     const Elf64_Ehdr *eh=(const Elf64_Ehdr*)data;
     if(!(eh->e_ident[0]==0x7f && eh->e_ident[1]=='E' && eh->e_ident[2]=='L' && eh->e_ident[3]=='F')) return 0;
@@ -23,7 +23,7 @@ u64 elf_load(const u8 *data, u64 size, u64 *entry_out){
             void *pg = pmm_alloc_page(); if(!pg) return 0;
             u64 phys = (u64)pg - hhdm;
             u64 flags = 0x7; /* present+write+user */
-            vmm_map(va, phys, flags);
+            if(pml4_root) vmm_map_to(pml4_root, va, phys, flags); else vmm_map(va, phys, flags);
         }
         /* copy */
         for(u64 j=0;j<ph->p_filesz;j++){

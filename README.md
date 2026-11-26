@@ -1,4 +1,4 @@
-# QNU Kernel 0.0.7
+# QNU Kernel 0.0.8
 
 **An independent kernel, built from the ground up.**
 
@@ -8,15 +8,16 @@ QNU is not a fork, derivative, or modification of Linux, FreeBSD, OpenBSD, NetBS
 
 ## Status
 
-- Version: `0.0.7`
+- Version: `0.0.8`
 - Stage: Experimental / Pre-alpha
 - Architecture: `x86_64`
 - Boot: `UEFI/BIOS` (Limine)
 - Kernel: Modular monolithic
 - License: `GPL-2.0-only`
 
-## 0.0.7 Features
+## 0.0.8 Features
 
+- Per-process address space isolation: separate PML4, kernel-half sharing, CR3 switch on exec
 - Ring 3 usermode (`iretq`), TSS.RSP0, per-process kernel syscall stack
 - ELF64 loader (PT_LOAD segments, user mappings)
 - POSIX-like syscall ABI foundation: `read/write/open/close/fstat/brk/getpid/exit/exit_group/uname/getcwd/chdir/arch_prctl`
