@@ -72,6 +72,7 @@ void kmain(void) {
     { extern void modules_init(void); modules_init(); }
     { extern void blk_init(void); extern void ramdisk_init(void); blk_init(); ramdisk_init(); }
     { extern void virtio_blk_init(void); virtio_blk_init(); }
+    { extern void ahci_init(void); ahci_init(); }
     { extern void disk_init(void); disk_init(); }
     { extern void usb_init(void); usb_init(); }
     vfs_init();
